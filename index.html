@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>websocket</title>
+    <style>
+        .main {
+            padding: 1em;
+        }
+
+        .msg-box {
+            height: 50vh;
+            max-height: 50vh;
+            border: 1px solid #ccc;
+            overflow: scroll;
+            padding: .5em 0 .5em .5em;
+        }
+
+        .receive {
+            color: rgb(50, 145, 113);
+        }
+
+        .error {
+            color: #e33;
+        }
+        .info {
+            color: rgb(45, 197, 207);
+        }
+        .send {
+            color: rgb(34, 34, 34);
+            background-color: rgb(226, 247, 218);
+        }
+
+        .ctr-panel,.op-panel {
+            padding-top: 1em;
+        }
+        .from-item {
+            padding: 1em 0;
+        }
+        .title {
+            text-align: center;
+            font-size: 2em;
+            font-weight: 400;
+            padding: .5em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main">
+        <div>
+            <div class="title">Websocket Test</div>
+            <div class="msg-box" id="message">
+            </div>
+            <div class="op-panel">
+                <div class="from-item">
+                    <input class="input" id="text" type="text" />
+                    <button id="sendText" disabled>send text</button>
+                </div>
+                <div class="from-item">
+                    <input class="input" id="file" type="file" />
+                    <button id="sendFile" disabled>send file</button>
+                </div>
+            </div>
+        </div>
+        <div class="ctr-pannel">
+            <button id="connect">Connect</button>
+            <button id="close" disabled>close</button>
+        </div>
+    </div>
+
+    <script>
+        var message = document.getElementById('message');
+        //创建一个webSocket 实例
+        document.getElementById('connect').addEventListener('click', function () {
+            var webSocket = new WebSocket("ws://127.0.0.1:9999/csv-parser", 'csv-parser');
+            webSocket.addEventListener('error', function () {
+                console.log("error", event.data);
+                message.innerHTML += '<div class="error">error closed</div>';
+                document.getElementById('connect').removeAttribute('disabled');
+                document.getElementById('close').setAttribute('disabled', "");
+                document.getElementById('sendFile').setAttribute('disabled', "");
+                document.getElementById('sendText').setAttribute('disabled', "");
+            });
+            webSocket.addEventListener('open', function () {
+                console.log("connected");
+                message.innerHTML += '<div class="info">connected</div>';
+                document.getElementById('connect').setAttribute('disabled', "");
+                document.getElementById('close').removeAttribute('disabled');
+                document.getElementById('sendFile').removeAttribute('disabled');
+                document.getElementById('sendText').removeAttribute('disabled');
+            });
+            webSocket.addEventListener('close', function () {
+                console.log("close");
+                message.innerHTML += '<div class="info">close</div>';
+                document.getElementById('connect').removeAttribute('disabled');
+                document.getElementById('close').setAttribute('disabled', "");
+                document.getElementById('sendFile').setAttribute('disabled', "");
+                document.getElementById('sendText').setAttribute('disabled', "");
+            });
+            webSocket.addEventListener('message', function () {
+                console.log("message", event.data);
+                if (event.data instanceof Blob) {
+                    message.innerHTML += '<div class="receive">receive blob data</div>';
+                } else {
+                    message.innerHTML += '<div class="receive">' + event.data + '</div>';
+                }
+            });
+            document.getElementById('close').addEventListener('click', function () {
+                webSocket.close();
+                document.getElementById('connect').removeAttribute('disabled');
+                document.getElementById('close').setAttribute('disabled', "");
+                document.getElementById('sendFile').setAttribute('disabled', "");
+                document.getElementById('sendText').setAttribute('disabled', "");
+            })
+            document.getElementById('sendFile').addEventListener('click', function () {
+                var file = document.getElementById('file').files[0]
+                if (file) {
+                    webSocket.send(file);
+                    message.innerHTML += '<div class="send">send blob</div>';
+                } else {
+                    message.innerHTML += '<div class="error">need select file</div>';
+                }
+            })
+            document.getElementById('sendText').addEventListener('click', function () {
+                elem = document.getElementById('text')
+                webSocket.send(elem.value);
+                message.innerHTML += '<div class="send">' + elem.value + '</div>';
+                elem.value = '';
+            })
+        });
+    </script>
+</body>
+
+</html>
